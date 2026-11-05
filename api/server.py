@@ -1,3 +1,23 @@
+"""
+╔══════════════════════════════════════════════════════════════════════╗
+║  文件：api/server.py                                                  ║
+║  角色：FastAPI 入口——HTTP 接口 + WebSocket + 文件上传下载              ║
+║  JS 类比：≈ src/server/index.ts（Express/Koa/NestJS 的入口文件）       ║
+║  启动：python api/server.py 或 uvicorn api.server:app                  ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📖 语法速览（重点：FastAPI 路由装饰器 + async 接口 + WebSocket）：
+  - @app.get("/api/task")          ← GET 路由（≈ Express 的 app.get）
+  - @app.post("/api/task")         ← POST 路由（≈ Express 的 app.post）
+  - async def run_task(request):   ← 异步路由处理函数
+  - @app.websocket("/ws/{id}")     ← WebSocket 路由（≈ ws.on('connection', ...)）
+  - asyncio.create_task(fn())      ← 后台执行不阻塞（≈ setInterval / setTimeout）
+
+🎯 读完你应该能说清：
+  1. 用户请求 → Agent 执行 → 前端收到进度的完整链路？（画图！）
+  2. 为什么用 asyncio.create_task 而不是直接 await？（提示：立即返回让前端拿到 task_id）
+  3. WebSocket 的心跳机制怎么实现的？（提示：前端发 ping，后端回 pong）
+"""
 import sys
 import os
 

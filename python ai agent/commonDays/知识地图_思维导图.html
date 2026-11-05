@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python + AI Agent 学习作战地图</title>
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --card:#fffdf8;
+    --ink:#15171c;
+    --muted:#5d636f;
+    --line:#dcd5c7;
+    --green:#1f6f5c;
+    --green-soft:#e5f0ec;
+    --amber:#b9742a;
+    --amber-soft:#fbf0e0;
+    --blue:#2f5d8a;
+    --blue-soft:#e8eff6;
+    --red:#a34a3f;
+    --red-soft:#f7e8e4;
+    --shadow:0 10px 30px rgba(30,33,40,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(31,111,92,.07), transparent 38%),
+      radial-gradient(circle at 88% 8%, rgba(185,116,42,.07), transparent 34%),
+      var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px 80px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    margin:28px 0 34px;
+    background:linear-gradient(135deg,#121820 0%,#18241f 55%,#1c2418 100%);
+    color:#f7f4ea;
+    border-radius:22px;
+    padding:46px 46px 40px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 24px 60px rgba(18,24,32,.18);
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+                      linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:36px 36px;
+    mask-image:linear-gradient(to bottom right,rgba(0,0,0,.9),transparent 75%);
+  }
+  .hero::after{
+    content:"";position:absolute;right:-90px;top:-110px;width:340px;height:340px;
+    border-radius:50%;background:radial-gradient(circle,rgba(220,170,90,.22),transparent 65%);
+  }
+  .hero-inner{position:relative;z-index:2;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:#d8c9a8;border:1px solid rgba(216,201,168,.28);
+    padding:6px 12px;border-radius:999px;margin-bottom:22px;
+  }
+  .eyebrow i{width:6px;height:6px;border-radius:50%;background:#d8a55e;display:block;}
+  h1{font-size:clamp(30px,4.4vw,52px);line-height:1.12;letter-spacing:-.02em;font-weight:760;}
+  h1 span{color:#e2b978;}
+  .hero p.lead{
+    margin-top:16px;max-width:720px;color:#b9c3bd;font-size:15.5px;
+  }
+  .hero-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
+  .stat{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;padding:10px 16px;min-width:132px;
+  }
+  .stat b{display:block;font-size:20px;color:#fff;font-weight:700;}
+  .stat small{color:#9fb0a7;font-size:11.5px;letter-spacing:.06em;}
+
+  /* ---------- SECTION ---------- */
+  section{margin-top:52px;}
+  .sec-head{display:flex;align-items:flex-end;gap:14px;margin-bottom:22px;}
+  .sec-num{
+    font-family:"SFMono-Regular",Consolas,monospace;font-size:12px;color:var(--green);
+    border-bottom:2px solid var(--green);padding-bottom:2px;letter-spacing:.12em;
+  }
+  .sec-head h2{font-size:clamp(21px,2.6vw,28px);letter-spacing:-.01em;font-weight:720;}
+  .sec-head p{color:var(--muted);font-size:13.5px;margin-left:auto;max-width:420px;text-align:right;}
+
+  /* ---------- STRATEGY ---------- */
+  .strategy{
+    display:grid;grid-template-columns:1.15fr .85fr;gap:18px;
+  }
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;
+    box-shadow:var(--shadow);
+  }
+  .panel h3{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .panel h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .panel p{font-size:14px;color:#3c424c;}
+  .reframe{
+    margin-top:14px;background:var(--green-soft);border-left:3px solid var(--green);
+    padding:12px 14px;border-radius:0 10px 10px 0;font-size:13.5px;color:#215344;
+  }
+  .reframe b{color:#174c3d;}
+  .skip-list li{
+    font-size:13.5px;color:#5b413c;background:var(--red-soft);
+    border-radius:8px;padding:8px 10px;margin-bottom:8px;list-style:none;
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  .skip-list li span{color:var(--red);font-weight:700;}
+
+  /* ---------- MINDMAP ---------- */
+  .map-note{
+    display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;font-size:12px;color:var(--muted);
+  }
+  .map-note span{background:#eee9de;border-radius:999px;padding:4px 10px;}
+  .mindmap{position:relative;padding-left:12px;}
+  .mindmap::before{
+    content:"";position:absolute;left:41px;top:10px;bottom:10px;width:2px;
+    background:linear-gradient(to bottom,var(--green),var(--blue),var(--amber),var(--red));
+    opacity:.45;
+  }
+  .branch{display:grid;grid-template-columns:64px 1fr;gap:18px;margin-bottom:22px;position:relative;}
+  .rail{display:flex;justify-content:center;padding-top:6px;position:relative;z-index:2;}
+  .rail .num{
+    width:44px;height:44px;border-radius:50%;background:var(--ink);color:#f7f4ea;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"SFMono-Regular",Consolas,monospace;font-size:13px;letter-spacing:.04em;
+    box-shadow:0 0 0 6px var(--paper),0 6px 16px rgba(21,23,28,.18);
+  }
+  .branch-body{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px 24px;box-shadow:var(--shadow);position:relative;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .branch-body:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(30,33,40,.1);}
+  .branch-body::before{
+    content:"";position:absolute;left:-19px;top:24px;width:18px;height:2px;background:var(--line);
+  }
+  .branch-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+  .branch-head h3{font-size:18px;font-weight:700;letter-spacing:-.01em;}
+  .week-tag{
+    font-family:"SFMono-Regular",Consolas,monospace;font-size:11px;
+    background:var(--ink);color:#f7f4ea;border-radius:5px;padding:2px 7px;letter-spacing:.06em;
+  }
+  .goal{font-size:13px;color:var(--muted);margin-bottom:16px;}
+  .groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;}
+  .group{
+    border-left:2px solid #e4ddd0;padding-left:12px;
+  }
+  .group h4{font-size:12px;letter-spacing:.08em;color:var(--green);text-transform:uppercase;margin-bottom:8px;}
+  .leaves{display:flex;flex-wrap:wrap;gap:6px;}
+  .leaf{
+    font-size:12.5px;color:#31363e;background:#f4f0e6;border:1px solid #e6dfd2;
+    border-radius:7px;padding:4px 9px;white-space:nowrap;
+  }
+  .leaf strong{color:var(--amber);font-weight:700;}
+  .deliverable{
+    margin-top:16px;background:var(--amber-soft);border:1px dashed #e0c49a;
+    border-radius:10px;padding:10px 12px;font-size:12.5px;color:#6d4c22;
+  }
+  .deliverable b{color:#8a5a1d;}
+  .branch-body[data-accent="blue"] .group h4{color:var(--blue);}
+  .branch-body[data-accent="amber"] .group h4{color:var(--amber);}
+  .branch-body[data-accent="red"] .group h4{color:var(--red);}
+
+  /* ---------- SEQUENCE ---------- */
+  .sequence{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin-top:8px;}
+  .seq{
+    position:relative;background:var(--card);border:1px solid var(--line);padding:16px 14px 16px;
+    min-height:118px;
+  }
+  .seq:first-child{border-radius:12px 0 0 12px;}
+  .seq:last-child{border-radius:0 12px 12px 0;}
+  .seq:not(:last-child){border-right:none;}
+  .seq .s-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .seq .s-no{font-family:"SFMono-Regular",Consolas,monospace;font-size:11px;color:var(--muted);}
+  .seq .s-week{font-size:10.5px;background:#eee8da;color:#6c6355;border-radius:4px;padding:1px 6px;}
+  .seq b{display:block;font-size:13.5px;line-height:1.35;margin-bottom:6px;}
+  .seq p{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .seq::after{
+    content:"→";position:absolute;right:-9px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;border-radius:50%;background:var(--paper);color:var(--green);
+    font-size:11px;display:flex;align-items:center;justify-content:center;z-index:3;
+  }
+  .seq:last-child::after{display:none;}
+
+  /* ---------- TABLE ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow);}
+  table{width:100%;border-collapse:collapse;min-width:760px;}
+  thead th{
+    text-align:left;font-size:11px;letter-spacing:.09em;color:#6b6355;
+    background:#efe9dc;padding:12px 14px;font-weight:600;white-space:nowrap;
+  }
+  tbody td{padding:13px 14px;border-top:1px solid #eee8dc;font-size:13px;vertical-align:top;}
+  tbody td:first-child{font-family:"SFMono-Regular",Consolas,monospace;font-size:12px;color:var(--green);white-space:nowrap;}
+  tbody td b{font-size:13.5px;}
+  tbody td .out{color:#4a505a;}
+  tbody tr:hover{background:#fbf7ee;}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:999px;margin-top:5px;}
+  .tag.must{background:var(--red-soft);color:var(--red);}
+  .tag.core{background:var(--green-soft);color:var(--green);}
+  .tag.deploy{background:var(--blue-soft);color:var(--blue);}
+
+  /* ---------- DAY1 ---------- */
+  .day1{
+    background:var(--ink);color:#f4f1e8;border-radius:18px;padding:28px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;box-shadow:0 20px 44px rgba(21,23,28,.16);
+  }
+  .day1 .d-head{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+  .day1 .d-head h3{font-size:19px;}
+  .day1 .d-head .d-total{font-size:12px;color:#9fb0a7;letter-spacing:.08em;}
+  .d-block{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;}
+  .d-block .d-time{font-family:"SFMono-Regular",Consolas,monospace;font-size:11px;color:#e2b978;letter-spacing:.08em;}
+  .d-block h4{font-size:14px;margin:7px 0 8px;color:#fff;}
+  .d-block p,.d-block li{font-size:12px;color:#b7c1bb;line-height:1.6;}
+  .d-block ul{padding-left:15px;}
+  .d-block code{font-family:"SFMono-Regular",Consolas,monospace;font-size:11px;color:#f0d8ac;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;}
+  .accept{
+    grid-column:1/-1;border-top:1px solid rgba(255,255,255,.12);padding-top:16px;margin-top:4px;
+    display:flex;flex-wrap:wrap;gap:10px 24px;font-size:12.5px;color:#c6cfc9;
+  }
+  .accept b{color:#e2b978;}
+  .accept span{display:flex;align-items:center;gap:7px;}
+  .accept span i{
+    width:14px;height:14px;border:1px solid rgba(226,185,120,.6);border-radius:3px;display:block;
+  }
+
+  /* ---------- CARDS ---------- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .method{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow);}
+  .method .m-no{font-family:"SFMono-Regular",Consolas,monospace;font-size:11px;color:var(--amber);letter-spacing:.1em;}
+  .method h3{font-size:15.5px;margin:7px 0 8px;}
+  .method p{font-size:12.8px;color:#4b515b;}
+  .method .do{margin-top:10px;font-size:12px;color:var(--green);background:var(--green-soft);border-radius:7px;padding:8px 10px;}
+
+  /* ---------- CHINA ---------- */
+  .china{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .china .panel h4{font-size:13px;color:var(--muted);letter-spacing:.06em;margin-bottom:9px;}
+  .china ul{list-style:none;}
+  .china li{font-size:13px;padding:6px 0;border-bottom:1px dashed #e7e0d3;color:#3d434d;}
+  .china li:last-child{border-bottom:none;}
+  .china li b{color:var(--green);}
+  .warn{background:var(--red-soft);border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6c3b34;margin-top:12px;}
+  .warn b{color:var(--red);}
+
+  /* ---------- FOOTER ---------- */
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+  footer b{color:var(--ink);}
+
+  @media (max-width:900px){
+    .strategy,.china{grid-template-columns:1fr;}
+    .sequence{grid-template-columns:1fr 1fr;}
+    .seq:nth-child(2),.seq:nth-child(4){border-right:1px solid var(--line);}
+    .seq:nth-child(1),.seq:nth-child(2){border-radius:12px 12px 0 0;}
+    .seq:nth-child(3),.seq:nth-child(4){border-radius:0;}
+    .seq:nth-child(5),.seq:nth-child(6){border-radius:0 0 12px 12px;}
+    .seq::after{display:none;}
+    .day1{grid-template-columns:1fr 1fr;}
+    .grid3{grid-template-columns:1fr;}
+    .sec-head{flex-wrap:wrap;}
+    .sec-head p{text-align:left;margin-left:0;}
+  }
+  @media (max-width:600px){
+    .wrap{padding:0 14px 60px;}
+    .hero{padding:30px 24px;border-radius:16px;}
+    .branch{grid-template-columns:44px 1fr;gap:10px;}
+    .rail .num{width:34px;height:34px;font-size:11px;}
+    .mindmap::before{left:30px;}
+    .sequence{grid-template-columns:1fr;}
+    .seq::after{display:none;}
+    .day1{grid-template-columns:1fr;padding:20px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .hero{box-shadow:none;background:#15171c;}
+    .branch-body,.panel,.method{box-shadow:none;}
+    section{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow"><i></i>Learning Strategy / MultiAgent-Search</div>
+      <h1>Python + AI Agent<br><span>学习作战地图</span></h1>
+      <p class="lead">
+        目标不是「学完 Python」，而是在 8 周内交付一个能部署、能演示、能写进简历的 Agent 服务。
+        这张地图按依赖关系排序：先能读代码，再能写工具，最后能上线。
+      </p>
+      <div class="hero-stats">
+        <div class="stat"><b>60 h</b><small>每天 1 小时 / 8 周</small></div>
+        <div class="stat"><b>6 层</b><small>知识依赖顺序</small></div>
+        <div class="stat"><b>1 个</b><small>真实上线项目</small></div>
+        <div class="stat"><b>0 门</b><small>不需要先刷完的课</small></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 战略 -->
+  <section id="strategy">
+    <div class="sec-head">
+      <span class="sec-num">01 / STRATEGY</span>
+      <h2>先把目标定义对</h2>
+      <p>Naval 思维：用具体知识 + 杠杆，而不是用「学习时长」感动自己。</p>
+    </div>
+    <div class="strategy">
+      <div class="panel">
+        <h3><span class="dot"></span>目标重定义</h3>
+        <p>
+          60 小时不足以「熟练掌握 Python」的全部语法，但足够完成一次
+          <b>最小可行跨越</b>：能读、能改、能写工具、能部署一个真实 Agent 服务。
+          剩下的深度，在你上线之后靠真实需求补齐。
+        </p>
+        <div class="reframe">
+          <b>把目标从「学 Python」改成「上线一个 Agent 产品」。</b>
+          前者没有终点，后者有验收标准：能被访问、能调用工具、能流式返回、能记录日志。
+        </div>
+      </div>
+      <div class="panel">
+        <h3><span class="dot" style="background:var(--red)"></span>反向思考：明确不学</h3>
+        <ul class="skip-list">
+          <li><span>×</span>机器学习数学、反向传播、模型训练</li>
+          <li><span>×</span>从零手写 Agent 框架 / 啃 AutoGPT 源码</li>
+          <li><span>×</span>Python 全栈课程从第一章刷到最后一章</li>
+          <li><span>×</span>同时学 Django、Flask、FastAPI 三套后端</li>
+        </ul>
+        <p style="margin-top:10px;font-size:12.5px;color:var(--muted)">
+          你不是要成为算法工程师，你要成为<b>能把模型接到业务里的人</b>。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 思维导图 -->
+  <section id="map">
+    <div class="sec-head">
+      <span class="sec-num">02 / KNOWLEDGE MAP</span>
+      <h2>项目知识点思维导图</h2>
+      <p>严格按 01 → 06 顺序学；每一层都给出「项目坐标」和「可验收动作」。</p>
+    </div>
+    <div class="map-note">
+      <span>项目坐标 = 去哪个文件看真实写法</span>
+      <span>验收动作 = 今天能跑出什么结果</span>
+      <span>先跑通，再理解，最后重构</span>
+    </div>
+
+    <div class="mindmap">
+
+      <!-- 01 -->
+      <div class="branch">
+        <div class="rail"><span class="num">01</span></div>
+        <div class="branch-body">
+          <div class="branch-head">
+            <h3>Python 地基</h3><span class="week-tag">W1</span>
+          </div>
+          <p class="goal">目标：看懂项目里 80% 的普通函数与配置代码，并能自己写小脚本。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>语法骨架</h4>
+              <div class="leaves">
+                <span class="leaf">变量 / 类型</span>
+                <span class="leaf">list / dict</span>
+                <span class="leaf">if / for</span>
+                <span class="leaf">函数 def</span>
+                <span class="leaf">模块 import</span>
+                <span class="leaf">异常 try/with</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>项目必备</h4>
+              <div class="leaves">
+                <span class="leaf">venv / pip</span>
+                <span class="leaf">pathlib / Path</span>
+                <span class="leaf">dotenv</span>
+                <span class="leaf">YAML 配置</span>
+                <span class="leaf">typing / Annotated</span>
+                <span class="leaf">装饰器 @tool</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>异步入门</h4>
+              <div class="leaves">
+                <span class="leaf">async / await</span>
+                <span class="leaf">asyncio.create_task</span>
+                <span class="leaf">ContextVar</span>
+                <span class="leaf">事件循环</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>agent/llm.py · agent/prompts.py · agent/subagents/*.py · utils/retry.py<br>
+            <b>验收动作：</b>写一个脚本读取 prompt/prompts.yml，打印 3 个子智能体的名称、描述、system_prompt 长度。
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 -->
+      <div class="branch">
+        <div class="rail"><span class="num">02</span></div>
+        <div class="branch-body" data-accent="blue">
+          <div class="branch-head">
+            <h3>FastAPI 后端</h3><span class="week-tag">W2–W3</span>
+          </div>
+          <p class="goal">目标：理解「浏览器 → HTTP 接口 → 后台任务 → WebSocket 推送」这条完整链路。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>请求与响应</h4>
+              <div class="leaves">
+                <span class="leaf">@app.get / post</span>
+                <span class="leaf">Pydantic BaseModel</span>
+                <span class="leaf">UploadFile</span>
+                <span class="leaf">FileResponse</span>
+                <span class="leaf">StaticFiles</span>
+                <span class="leaf">CORS</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>实时链路</h4>
+              <div class="leaves">
+                <span class="leaf">WebSocket 握手</span>
+                <span class="leaf">连接池 dict</span>
+                <span class="leaf">心跳 ping/pong</span>
+                <span class="leaf">定向推送</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>异步任务</h4>
+              <div class="leaves">
+                <span class="leaf">asyncio.create_task</span>
+                <span class="leaf">不阻塞响应</span>
+                <span class="leaf">uvicorn 启动</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>api/server.py · api/monitor.py · api/context.py<br>
+            <b>验收动作：</b>写一个 FastAPI 回声服务：POST 提交任务立即返回 ID，WebSocket 按 ID 推送 3 条进度。
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 -->
+      <div class="branch">
+        <div class="rail"><span class="num">03</span></div>
+        <div class="branch-body">
+          <div class="branch-head">
+            <h3>LLM 接入</h3><span class="week-tag">W3</span>
+          </div>
+          <p class="goal">目标：不依赖框架，先用原生 HTTP 调通一次国内大模型，理解消息结构。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>接入方式</h4>
+              <div class="leaves">
+                <span class="leaf">OpenAI 兼容协议</span>
+                <span class="leaf">init_chat_model</span>
+                <span class="leaf">base_url + key</span>
+                <span class="leaf">DeepSeek / 通义 / 智谱</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>消息与输出</h4>
+              <div class="leaves">
+                <span class="leaf">role / content</span>
+                <span class="leaf">system prompt</span>
+                <span class="leaf">stream 流式</span>
+                <span class="leaf">astream</span>
+                <span class="leaf">token 成本</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>可靠性</h4>
+              <div class="leaves">
+                <span class="leaf">超时</span>
+                <span class="leaf">指数退避重试</span>
+                <span class="leaf">错误信息脱敏</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>agent/llm.py · .env.example · utils/retry.py<br>
+            <b>验收动作：</b>用 requests 或 httpx 调用一次 DeepSeek，开启流式，在终端逐字打印回答。
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 -->
+      <div class="branch">
+        <div class="rail"><span class="num">04</span></div>
+        <div class="branch-body" data-accent="amber">
+          <div class="branch-head">
+            <h3>Agent 核心</h3><span class="week-tag">W4–W5</span>
+          </div>
+          <p class="goal">目标：这是整张地图的主峰。能解释「主智能体为什么以及如何调度子智能体」。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>工具层</h4>
+              <div class="leaves">
+                <span class="leaf">@tool 装饰器</span>
+                <span class="leaf">docstring = 工具说明</span>
+                <span class="leaf">参数类型 = Schema</span>
+                <span class="leaf">Function Calling</span>
+                <span class="leaf">tool_calls 解析</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>编排层</h4>
+              <div class="leaves">
+                <span class="leaf">create_deep_agent</span>
+                <span class="leaf">子智能体 = dict</span>
+                <span class="leaf">name / description</span>
+                <span class="leaf">system_prompt / tools</span>
+                <span class="leaf">task 调度</span>
+                <span class="leaf">Orchestrator 模式</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>状态与流式</h4>
+              <div class="leaves">
+                <span class="leaf">LangGraph 状态图</span>
+                <span class="leaf">thread_id</span>
+                <span class="leaf">SqliteSaver</span>
+                <span class="leaf">chunk / node 名</span>
+                <span class="leaf">多轮记忆</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>agent/main_agent.py · agent/subagents/*.py · prompt/prompts.yml<br>
+            <b>验收动作：</b>不看代码画出「用户 → 主 Agent → 3 个子 Agent → 汇总」时序图，并说明每个子 Agent 的触发条件。
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 -->
+      <div class="branch">
+        <div class="rail"><span class="num">05</span></div>
+        <div class="branch-body" data-accent="red">
+          <div class="branch-head">
+            <h3>工具生态与 RAG</h3><span class="week-tag">W6</span>
+          </div>
+          <p class="goal">目标：把「模型」变成「能干活」：联网、查库、翻知识库、生成文件。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>外部能力</h4>
+              <div class="leaves">
+                <span class="leaf">Tavily 搜索</span>
+                <span class="leaf">MySQL 查询</span>
+                <span class="leaf">NL2SQL</span>
+                <span class="leaf">RAGFlow SDK</span>
+                <span class="leaf">知识库会话</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>文件能力</h4>
+              <div class="leaves">
+                <span class="leaf">Markdown 生成</span>
+                <span class="leaf">PDF 转换</span>
+                <span class="leaf">docx / pdf / xlsx 读取</span>
+                <span class="leaf">pandas 预览</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>国内替代</h4>
+              <div class="leaves">
+                <span class="leaf">博查 / 阿里 IQS</span>
+                <span class="leaf">Dify / RAGFlow</span>
+                <span class="leaf">MySQL / PostgreSQL</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>tools/tavily_tool.py · tools/db_tools.py · tools/ragflow_tools.py · tools/markdown_tools.py<br>
+            <b>验收动作：</b>自己新增一个「天气查询」子智能体，注册进 main_agent，并用一句话触发它。
+          </div>
+        </div>
+      </div>
+
+      <!-- 06 -->
+      <div class="branch">
+        <div class="rail"><span class="num">06</span></div>
+        <div class="branch-body" data-accent="blue">
+          <div class="branch-head">
+            <h3>工程化与上线</h3><span class="week-tag">W7–W8</span>
+          </div>
+          <p class="goal">目标：从「我电脑能跑」变成「别人也能访问，而且我能知道它为什么坏」。</p>
+          <div class="groups">
+            <div class="group">
+              <h4>可观测</h4>
+              <div class="leaves">
+                <span class="leaf">日志 logging</span>
+                <span class="leaf">monitor 埋点</span>
+                <span class="leaf">请求耗时</span>
+                <span class="leaf">token / 成本</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>可评测</h4>
+              <div class="leaves">
+                <span class="leaf">20 条固定用例</span>
+                <span class="leaf">正确率 / 召回</span>
+                <span class="leaf">失败样例复盘</span>
+                <span class="leaf">Prompt 迭代</span>
+              </div>
+            </div>
+            <div class="group">
+              <h4>可部署</h4>
+              <div class="leaves">
+                <span class="leaf">Dockerfile</span>
+                <span class="leaf">docker compose</span>
+                <span class="leaf">Nginx / HTTPS</span>
+                <span class="leaf">阿里云 / 腾讯云</span>
+                <span class="leaf">密钥与合规</span>
+              </div>
+            </div>
+          </div>
+          <div class="deliverable">
+            <b>项目坐标：</b>Dockerfile · docker-compose.yml · utils/path_utils.py · api/monitor.py<br>
+            <b>验收动作：</b>用 docker compose 在云服务器启动服务，浏览器访问 /docs，跑通一次完整任务并保存日志。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 学习顺序 -->
+  <section id="order">
+    <div class="sec-head">
+      <span class="sec-num">03 / SEQUENCE</span>
+      <h2>为什么必须按这个顺序</h2>
+      <p>后一层直接依赖前一层；跳层会在报错里反复迷路。</p>
+    </div>
+    <div class="sequence">
+      <div class="seq">
+        <div class="s-top"><span class="s-no">01</span><span class="s-week">W1</span></div>
+        <b>读得懂</b>
+        <p>语法 + 配置 + 路径，能把项目里的普通函数读明白。</p>
+      </div>
+      <div class="seq">
+        <div class="s-top"><span class="s-no">02</span><span class="s-week">W2–3</span></div>
+        <b>接得上</b>
+        <p>HTTP + 异步 + WebSocket，理解前后端如何实时通信。</p>
+      </div>
+      <div class="seq">
+        <div class="s-top"><span class="s-no">03</span><span class="s-week">W3</span></div>
+        <b>调得通</b>
+        <p>LLM API + 流式输出，先不依赖框架跑通一次。</p>
+      </div>
+      <div class="seq">
+        <div class="s-top"><span class="s-no">04</span><span class="s-week">W4–5</span></div>
+        <b>写得出</b>
+        <p>@tool + 子智能体 + 编排，能自己加一个助手。</p>
+      </div>
+      <div class="seq">
+        <div class="s-top"><span class="s-no">05</span><span class="s-week">W6</span></div>
+        <b>干得了活</b>
+        <p>搜索、数据库、知识库、文件，模型真正产生业务价值。</p>
+      </div>
+      <div class="seq">
+        <div class="s-top"><span class="s-no">06</span><span class="s-week">W7–8</span></div>
+        <b>上得了线</b>
+        <p>日志、评测、Docker、云服务器，从 Demo 变成服务。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 周 -->
+  <section id="plan">
+    <div class="sec-head">
+      <span class="sec-num">04 / 8-WEEK PLAN</span>
+      <h2>60 小时路线图</h2>
+      <p>每周一个可展示产物；没有产物的一周视为未完成。</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>周次</th><th>主题</th><th>看什么（10–15 min）</th><th>做什么（35–40 min）</th><th>周末验收</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>W1</td>
+            <td><b>Python 地基</b><span class="tag must">必过</span></td>
+            <td class="out">廖雪峰「函数 / 类 / 装饰器」；项目 agent/llm.py、agent/prompts.py</td>
+            <td class="out">读 YAML、字典遍历、文件读写、写 3 个小脚本</td>
+            <td class="out">能脱稿解释「子智能体 = 字典配置」，Day1 验收全 PASS</td>
+          </tr>
+          <tr>
+            <td>W2</td>
+            <td><b>异步与网络</b><span class="tag core">核心</span></td>
+            <td class="out">async/await、httpx、JSON、Pydantic 基础</td>
+            <td class="out">写并发请求脚本；把 3 个 API 并发跑一遍</td>
+            <td class="out">能解释「为什么 FastAPI 里不能写 time.sleep」</td>
+          </tr>
+          <tr>
+            <td>W3</td>
+            <td><b>FastAPI + LLM</b><span class="tag core">核心</span></td>
+            <td class="out">FastAPI 官方 Tutorial 前 6 节；api/server.py</td>
+            <td class="out">写回声服务 + 流式调用 DeepSeek</td>
+            <td class="out">Postman 提交任务，WebSocket 收到进度</td>
+          </tr>
+          <tr>
+            <td>W4</td>
+            <td><b>工具调用</b><span class="tag must">必过</span></td>
+            <td class="out">OpenAI Function Calling 文档；tools/tavily_tool.py</td>
+            <td class="out">手写一个 @tool + 自己解析 tool_calls（不用框架）</td>
+            <td class="out">模型能自主选择工具并返回参数</td>
+          </tr>
+          <tr>
+            <td>W5</td>
+            <td><b>多 Agent 编排</b><span class="tag must">必过</span></td>
+            <td class="out">deepagents 文档；agent/main_agent.py 逐行</td>
+            <td class="out">复刻「主 Agent + 2 个子 Agent」最小版本</td>
+            <td class="out">画出时序图，新增一个子 Agent 只需改 1 个文件</td>
+          </tr>
+          <tr>
+            <td>W6</td>
+            <td><b>工具生态</b><span class="tag core">核心</span></td>
+            <td class="out">Tavily / MySQL / RAGFlow SDK 文档</td>
+            <td class="out">接一个真实工具；加「天气助手」并触发</td>
+            <td class="out">完整跑通「搜索 + 查库 + 汇总」一条链路</td>
+          </tr>
+          <tr>
+            <td>W7</td>
+            <td><b>工程化与评测</b><span class="tag core">核心</span></td>
+            <td class="out">logging、retry、ContextVar、路径安全</td>
+            <td class="out">建 20 条评测用例；记录耗时、token、失败原因</td>
+            <td class="out">有一张自己的评测表，错误率可量化</td>
+          </tr>
+          <tr>
+            <td>W8</td>
+            <td><b>部署上线</b><span class="tag deploy">落地</span></td>
+            <td class="out">Dockerfile、compose、Nginx、云服务器入门</td>
+            <td class="out">云服务器部署 + 域名 + HTTPS + 日志</td>
+            <td class="out">别人能访问；你能查到每次请求的日志</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 今日 -->
+  <section id="day1">
+    <div class="sec-head">
+      <span class="sec-num">05 / DAY 1</span>
+      <h2>今天这 60 分钟</h2>
+      <p>不追求看懂全部；追求「跑出一个结果 + 讲清一个概念」。</p>
+    </div>
+    <div class="day1">
+      <div class="d-head">
+        <h3>Day 1 · 从「能读」开始</h3>
+        <span class="d-total">TOTAL 60 MIN · 环境已就绪</span>
+      </div>
+      <div class="d-block">
+        <div class="d-time">00–10 MIN · 看</div>
+        <h4>两个文件，一个概念</h4>
+        <p>读 <code>agent/llm.py</code>（10 行）和 <code>agent/subagents/network_search_agent.py</code>（12 行）。</p>
+        <p style="margin-top:6px">只回答一个问题：<b style="color:#fff">子智能体到底是什么？</b></p>
+      </div>
+      <div class="d-block">
+        <div class="d-time">10–45 MIN · 做</div>
+        <h4>完成 5 个 TODO</h4>
+        <p>打开 <code>今日练习_python基础与Agent入门.py</code>，依次完成：读配置 → 列子智能体 → 关键词路由 → 构造 tool_call → 异步 mock 执行。</p>
+      </div>
+      <div class="d-block">
+        <div class="d-time">45–52 MIN · 验收</div>
+        <h4>自动验收</h4>
+        <p>运行 <code>python 验收_day1.py</code>，目标 6/6 PASS。</p>
+        <p style="margin-top:6px">卡住超过 10 分钟，再看 <code>参考实现_day1.py</code>，但必须关掉后自己重写一遍。</p>
+      </div>
+      <div class="d-block">
+        <div class="d-time">52–60 MIN · 费曼</div>
+        <h4>讲给外行听</h4>
+        <p>用 3 句话解释：Agent / Tool / 多 Agent。写进 <code>费曼学习笔记_模板.md</code>，再录一段 60 秒语音。</p>
+      </div>
+      <div class="accept">
+        <b>今日验收：</b>
+        <span><i></i>终端能打印 3 个子智能体表格</span>
+        <span><i></i>验收脚本 6/6 PASS</span>
+        <span><i></i>能脱稿讲清「子智能体 = dict」</span>
+        <span><i></i>笔记已写入并保存</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 方法 -->
+  <section id="method">
+    <div class="sec-head">
+      <span class="sec-num">06 / METHOD</span>
+      <h2>四种学习武器，每天都要用</h2>
+      <p>方法不是装饰，是决定 60 小时能换回多少能力。</p>
+    </div>
+    <div class="grid3">
+      <div class="method">
+        <div class="m-no">01 / FEYNMAN</div>
+        <h3>费曼：讲不清 = 没学会</h3>
+        <p>每天用 3 句话讲今天的概念，不许用术语。卡住的地方就是漏洞，立刻回到代码里补。</p>
+        <div class="do">今天讲：Agent 是一个「会自己决定调用什么工具」的程序。</div>
+      </div>
+      <div class="method">
+        <div class="m-no">02 / DELIBERATE</div>
+        <h3>刻意练习：只练一个点</h3>
+        <p>每次只攻克「刚好超出当前能力」的单项技能，并有即时反馈。今天的靶心是：字典遍历 + 函数。</p>
+        <div class="do">验收脚本就是反馈器；红变绿才算完成。</div>
+      </div>
+      <div class="method">
+        <div class="m-no">03 / SCOTT YOUNG</div>
+        <h3>高效学习：直接做真事</h3>
+        <p>不先刷完课程。用「获取 → 理解 → 拓展 → 纠错 → 应用」直接复刻真实项目，用 Vue 经验做类比。</p>
+        <div class="do">类比：WebSocket ≈ 你熟悉的实时通道；ContextVar ≈ 每个标签页独立 store。</div>
+      </div>
+      <div class="method">
+        <div class="m-no">04 / NAVAL</div>
+        <h3>杠杆：让一份努力被复用</h3>
+        <p>代码、笔记、复盘都是可复用资产。每天一次 commit，让学习产生复利；把成果公开，获得机会杠杆。</p>
+        <div class="do">今天结束：commit 一次，并把笔记归档到云端。</div>
+      </div>
+      <div class="method">
+        <div class="m-no">05 / FEEDBACK</div>
+        <h3>用错误驱动，而不是用教程驱动</h3>
+        <p>每遇到一个报错，只记录三件事：报错原文、根因、下次如何避免。错误日志比笔记更值钱。</p>
+        <div class="do">建一个 errors.md，今天至少记录 1 条。</div>
+      </div>
+      <div class="method">
+        <div class="m-no">06 / CADENCE</div>
+        <h3>固定节奏：10 / 35 / 10 / 5</h3>
+        <p>看 10 分钟、写 35 分钟、讲 10 分钟、记 5 分钟。时间盒能防止「看视频看到睡着」。</p>
+        <div class="do">手机计时器从踏进学习状态那刻开始。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 国内落地 -->
+  <section id="china">
+    <div class="sec-head">
+      <span class="sec-num">07 / PRODUCTION</span>
+      <h2>中国国情下的落地清单</h2>
+      <p>能用国内服务就别绕路；先合规，再上线。</p>
+    </div>
+    <div class="china">
+      <div class="panel">
+        <h4>技术选型</h4>
+        <ul>
+          <li><b>大模型：</b>DeepSeek、阿里云百炼（通义）、智谱 GLM、火山方舟（豆包）</li>
+          <li><b>联网搜索：</b>博查 AI 搜索、阿里云 IQS；Tavily 可作备用</li>
+          <li><b>知识库：</b>RAGFlow（可自托管）、Dify（低代码）</li>
+          <li><b>数据库：</b>MySQL / PostgreSQL，先用 Docker 起本地实例</li>
+          <li><b>部署：</b>阿里云 / 腾讯云轻量服务器 + Docker + Nginx</li>
+          <li><b>前端：</b>你的 Vue 项目通过 WebSocket 接流式进度</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>上线前检查</h4>
+        <ul>
+          <li><b>密钥：</b>.env 不进 git，服务器用环境变量或密钥管理</li>
+          <li><b>鉴权：</b>WebSocket 与任务接口必须带 token，不能裸奔</li>
+          <li><b>限流：</b>按 IP / 用户限制任务数，防止 token 被刷爆</li>
+          <li><b>数据：</b>敏感数据不出境；日志脱敏</li>
+          <li><b>成本：</b>设每日预算与最大 token，记录每次调用成本</li>
+          <li><b>合规：</b>公开运营需 ICP 与生成式 AI 相关备案；内部自用先做风险评估</li>
+        </ul>
+        <div class="warn"><b>最容易翻车的一点：</b>把 API Key 写进前端或提交到 Git。上线前先搜一遍仓库。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div><b>配套文件：</b>今日练习_python基础与Agent入门.py · 验收_day1.py · 参考实现_day1.py · 费曼学习笔记_模板.md</div>
+    <div><b>归档：</b>云端「python ai agent」文件夹 · 每天一次 commit</div>
+  </footer>
+
+</div>
+</body>
+</html>

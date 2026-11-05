@@ -1,0 +1,14 @@
+D:\Ai学习\MultiAgent-Search\api\server.py:70: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [12696]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[Monitor] ConnectionManager manually bound to loop: 1260144253248
+[Server] WebSocket Manager bound to loop: 1260144253248
+INFO:     127.0.0.1:53830 - "GET / HTTP/1.1" 200 OK

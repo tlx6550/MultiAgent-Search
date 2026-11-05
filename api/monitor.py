@@ -1,3 +1,21 @@
+"""
+╔══════════════════════════════════════════════════════════════════════╗
+║  文件：api/monitor.py                                                  ║
+║  角色：WebSocket 监控器——Agent 干活时实时推进度给前端                  ║
+║  JS 类比：≈ new WebSocketManager() + 单例 ToolMonitor                 ║
+║  被谁用：所有 tools/*.py 和 agent/main_agent.py（到处 report_xxx）      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📖 语法速览（重点：单例模式 + asyncio 跨线程投递）：
+  - class ToolMonitor: __new__  ← Python 单例实现（≈ JS 的 Object.freeze 或 getInstance）
+  - asyncio.create_task(...)   ← 同事件循环内投递（≈ Promise.resolve().then()）
+  - run_coroutine_threadsafe(...) ← 跨线程投递（≈ worker.postMessage + Promise）
+
+🎯 读完你应该能说清：
+  1. 为什么要分同循环和跨循环两种 send 方式？（提示：Agent 可能在不同线程跑）
+  2. ToolMonitor 的三个 report_xxx 分别对应什么阶段？（提示：工具调用 / 子 Agent / 最终结果）
+  3. ConnectionManager 用什么数据结构存 WebSocket 连接？（提示：dict[str, WebSocket]）
+"""
 import sys
 import datetime
 import asyncio

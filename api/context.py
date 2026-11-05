@@ -1,3 +1,23 @@
+"""
+╔══════════════════════════════════════════════════════════════════════╗
+║  文件：api/context.py                                                  ║
+║  角色：协程级上下文变量——让每个请求拥有独立的「全局变量」                ║
+║  JS 类比：≈ 每个请求的 React Context（但 Python async 场景里没有线程隔离）║
+║  被谁用：agent/main_agent.py 设置；tools/*.py 读取                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📖 语法速览（重点：ContextVar 是 Python async 编程的核心）：
+  - _session_dir_ctx: ContextVar[Optional[str]] = ContextVar("session_dir", default=None)
+    ← 创建 ContextVar，泛型 Optional[str] 表示可以是字符串或 None
+  - .set(value) → 返回 token（用于 reset）
+  - .get() → 取当前值（任何深度都能 get 到，无需层层传参）
+  - .reset(token) → 恢复旧值（finally 里必须调，防止内存泄漏）
+
+🎯 读完你应该能说清：
+  1. ContextVar 和 JS 的模块级变量有什么本质区别？（提示：请求隔离）
+  2. 为什么 asyncio 里不能用 threading.local？（提示：所有协程在一个线程跑）
+  3. set → get → reset 三步分别在哪个文件的哪个函数里调用？
+"""
 from contextvars import ContextVar
 from typing import Optional
 
