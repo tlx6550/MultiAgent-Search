@@ -86,7 +86,15 @@ def retry(max_retries: int = 3, delay: float = 0.01):
             # 提示：range(max_retries + 1) 含首次调用，共 max_retries + 1 次机会
             # 成功就 return，失败就 sleep(delay) 继续试，全用完了 raise
             # ... 在这里写你的代码 ...
-            pass
+            last_exception = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args,**kwargs)  # 成功直接返回
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        time.sleep(delay)
+            raise last_exception
         return wrapper
     return decorator
 
@@ -122,7 +130,14 @@ def list_subagents_compact(config: dict) -> list[dict]:
     # TODO 2：用列表推导式替换 Day 1 的 for + append
     # 提示：config["sub_agents"].items() 拿到每个 (key, value)
     # ... 在这里写你的代码 ...
-    pass
+    return [
+        {
+            "name": value["name"],
+            "description": value["description"].strip(),
+            "prompt_chars": len(value["system_prompt"]),
+        }
+        for _key,value in config["sub_agents"].items()
+    ]
 
 
 # ============================================================
@@ -159,7 +174,12 @@ def register_tools(*tools, registry: dict | None = None, **meta):
     #   3. 把 tools 元组也存进去（key 可以叫 "tools"）
     #   4. 返回 registry
     # ... 在这里写你的代码 ...
-    pass
+    if registry is None:
+        registry = {}
+
+    registry.update(meta)
+    registry["tools"] =  tuple(tools)
+    return registry
 
 
 # ============================================================
@@ -206,7 +226,16 @@ def safe_search(query: str, mock_fail: bool = False) -> dict:
     #   finally:
     #     打印 "safe_search 调用结束"
     # ... 在这里写你的代码 ...
-    pass
+
+    try:
+        if mock_fail:
+            raise ValueError("网络超时")
+        return {"query":query,"results":f"搜索成功：{query} 的结果"}
+    except Exception as e:
+        print(f"[safe_search] 搜索失败：{e}")
+        return {"error": str(e), "fallback": True}
+    finally:
+        print("safe_search 调用结束")   
 
 
 # ============================================================
@@ -240,26 +269,29 @@ class ToolRegistry:
     def __init__(self):
         # TODO 5a：初始化工具字典（self.tools = {}）
         # ... 在这里写你的代码 ...
-        pass
+        self.tools = {}
 
     def register(self, name: str, fn: Callable):
         """注册一个工具。"""
         # TODO 5b：把 fn 存进 self.tools[name]
         # ... 在这里写你的代码 ...
-        pass
+        self.tools[name] = fn
 
     def call(self, name: str, *args, **kwargs):
         """调用已注册的工具，不存在返回 None。"""
         # TODO 5c：从 self.tools 取出工具，用 *args/**kwargs 调用
         # 提示：工具不存在时返回 None（不要 raise）
         # ... 在这里写你的代码 ...
-        pass
+        fn = self.tools.get(name)
+        if fn is None:
+            return None
+        return fn(*args, **kwargs)
 
     def list_tools(self) -> list[str]:
         """列出所有已注册的工具名。"""
         # TODO 5d：用列表推导式返回 self.tools 的 key 列表
         # ... 在这里写你的代码 ...
-        pass
+        return list(self.tools.keys())
 
 
 # ============================================================

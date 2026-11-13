@@ -60,6 +60,15 @@ def load_module(file_path: Path):
       2. module_from_spec         — 根据 spec 创建空 module
       3. exec_module              — 真正执行文件内容，把函数/变量装进 module
     """
+
+    #     # 假设目标文件里有这些顶层代码：
+    # ROUTE_RULES = {...}       # 执行后 → module.ROUTE_RULES = {...}
+
+    # def route_query(query):   # 执行后 → module.route_query = <那个函数对象>
+    #     ...
+
+    # class ToolRegistry:       # 执行后 → module.ToolRegistry = <那个类>
+    #     ...
     # 💡 JS 类比：给动态模块起内部名字（不是文件名）
     spec = importlib.util.spec_from_file_location("day1_exercise", file_path)
     if spec is None or spec.loader is None:
@@ -129,6 +138,20 @@ def main() -> int:
     print("=" * 64)
     print(f"验收目标：{target.name}")
     print("=" * 64)
+
+    # HERE = "d:\Ai学习\MultiAgent-Search\python ai agent\day1"
+    #          │
+    #          ├── 场景1: 默认路径（本身就是绝对的）
+    #          │    target = HERE / "今日练习_python基础与Agent入门.py"
+    #          │          = "d:\...\day1\今日练习_python基础与Agent入门.py" ✅
+    #          │
+    #          ├── 场景2: 相对路径（用户传 "参考实现_day1.py"）
+    #          │    target = HERE / "参考实现_day1.py"
+    #          │          = "d:\...\day1\参考实现_day1.py" ✅
+    #          │
+    #          └── 场景3: 绝对路径（用户传 "d:\...\day2\xxx.py"）
+    #               target 直接就是 "d:\...\day2\xxx.py" ✅
+    #               HERE 完全不参与拼接
 
     # ── 动态导入 ────────────────────────────────────────────────────────────
     try:

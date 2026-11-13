@@ -71,6 +71,7 @@ def main() -> int:
         return 1
 
     print("=" * 64)
+    print(f"target___验收目标：{target}")
     print(f"验收目标：{target.name}")
     print("=" * 64)
 
