@@ -152,7 +152,9 @@ async def stream_tokens(text: str, delay: float = 0.01) -> AsyncIterator[str]:
     #   2. await asyncio.sleep(delay) 模拟模型生成间隔
     #   3. yield ch 吐出这个字符（关键！yield 是生成器的标志）
     # ---- 在下面写你的代码 ----
-    pass
+    for ch in text:
+        await asyncio.sleep(delay)
+        yield ch
 
 
 async def collect_stream(text: str) -> str:
@@ -209,7 +211,9 @@ class MockSession:
         # TODO 3a：模拟创建会话
         # 提示：await asyncio.sleep(0.01)；把 self.entered 设为 True；return self
         # ---- 在下面写你的代码 ----
-        pass
+        await asyncio.sleep(0.01)
+        self.entered = True
+        return self
 
     async def __aexit__(self, exc_type, exc, tb):
         """退出 async with 块时执行（无论成功还是出错都会执行）。"""
@@ -217,7 +221,9 @@ class MockSession:
         # 提示：await asyncio.sleep(0.01)；把 self.exited 设为 True
         #      返回 False 表示「不吞掉异常」（把异常继续往上抛）
         # ---- 在下面写你的代码 ----
-        pass
+        await asyncio.sleep(0.01)
+        self.exited = True
+        return False  # 不吞异常，继续往上抛
 
     async def ask(self, question: str) -> str:
         """向会话提问。"""
@@ -242,6 +248,20 @@ async def use_session(name: str, question: str) -> dict:
           }
         }
     """
+    #      写法 1：async with（当前代码，简洁）
+    # async with MockSession(name) as session:
+    #     answer = await session.ask(question)
+
+    # # ↕ 完全等价于 ↕
+
+    # # 写法 2：手动写 try/finally（展开看就明白）
+    # s = MockSession(name)                     # 1. 造对象
+    # await s.__aenter__()                      # 2. 进入前执行异步初始化
+    # try:
+    #     session = s                           # as session = 把返回值赋给 session
+    #     answer = await session.ask(question)  # 3. 块内干活
+    # finally:
+    #     await s.__aexit__(None, None, None)   # 4. 退出时一定执行清理
     # 💡 async with ≈ 自动 try/finally，退出时一定调用 __aexit__
     async with MockSession(name) as session:
         answer = await session.ask(question)
@@ -301,6 +321,7 @@ class SubAgentConfig:
 
     # TODO 5d：声明 tools 字段（类型 list[str]，默认空列表）
     # ⚠️ 坑：不能用 tools: list[str] = []（可变对象共享，所有实例会共用同一个 list）
+    # 判断标准很简单：默认值如果是可变对象（list、dict、set），就用 default_factory=list/dict/set；不可变对象（int、str、float、tuple）可以直接写。
     #    正确写法：tools: list[str] = field(default_factory=list)
     # ---- 在下面写你的代码 ----
     tools:list[str] = field(default_factory=list)
@@ -335,6 +356,37 @@ if __name__ == "__main__":
         print(f"[1] 未完成或失败：{type(e).__name__}: {e}")
 
     # ── TODO 2：异步生成器 ───────────────────────────────────────────────
+    #      ❌ 错误：直接调异步函数，不会执行！
+    # use_session("temp_session", "问题")
+    # # 返回的是 <coroutine object use_session at 0x...>
+    # # 然后程序就结束了，协程根本没跑！
+
+    # # ✅ 正确：交给 asyncio.run
+    # info = asyncio.run(use_session("temp_session", "问题"))
+    # # 这次协程真的执行完，info 里拿到了最终返回值
+    # 核心概念：async def 定义的函数叫协程函数，调用它不会立刻执行函数体，
+    # 而是返回一个协程对象。协程对象需要被事件循环"驱动"才能真正运行。
+    # asyncio.run 就是帮你启动事件循环、跑完协程、拿结果。
+    # asyncio.run(coro) 是同步代码调异步函数的"入口"——它帮你造一个新的事件循环，驱动协程跑完，拿到结果，最后清理循环。
+    # 相当于"启动异步世界的引擎，跑完活，再关掉引擎"。
+    #     你的代码（同步世界）
+    #     │
+    #     │  asyncio.run(coro)  ← 入口
+    #     ▼
+    # ┌─────────────────┐
+    # │  事件循环启动    │  ← asyncio.run 内部自动创建
+    # │                 │
+    # │  执行 coro       │  ← 真正跑你的 async 函数
+    # │    ├─ await A   │
+    # │    ├─ await B   │  ← 遇到 await 就把控制权交回事件循环
+    # │    └─ return X  │
+    # │                 │
+    # │  事件循环关闭    │  ← asyncio.run 内部自动清理
+    # └─────────────────┘
+    #     │
+    #     ▼
+    # 你的代码继续（同步世界）
+    # info = X   ← 拿到返回值
     try:
         text = asyncio.run(collect_stream("你好Agent"))
         print(f"[2] 流式拼回：{text}")

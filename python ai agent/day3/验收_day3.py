@@ -222,15 +222,65 @@ def main() -> int:
     def t6():
         async def scenario():
             # 同时跑三条流式输出（模拟前端三个会话并发）
+            # 这是列表推导式，拆成普通 for 循环就一目了然：相当于
+            # tasks = []
+            # for t in ["甲", "乙丙", "丁戊己"]:
+            #     tasks.append(m.collect_stream(t))
+            #得到类似如下
+            # tasks = [
+            #     m.collect_stream("甲"),       # 协程对象 1
+            #     m.collect_stream("乙丙"),     # 协程对象 2
+            #     m.collect_stream("丁戊己"),   # 协程对象 3
+            # ]
+
+            #
             tasks = [m.collect_stream(t) for t in ["甲", "乙丙", "丁戊己"]]
             streams = await asyncio.gather(*tasks)
 
+           #======
+        #    为什么使用gather
+           # 假设 collect_stream 里有 await asyncio.sleep（模拟流式 IO）
+            # async def collect_stream(text):
+            #     for ch in text:
+            #         await asyncio.sleep(0.01)  # 流式输出的间隔
+            #     return text
+
+            # 串行跑（不用 gather）：总耗时 ≈ (1+2+3)*0.01 = 0.06秒
+            # 并发跑（用 gather）：总耗时 ≈ max(1,2,3)*0.01 = 0.03秒 ← 快一倍！
+
+           #======
             # 同时调用包里的 quick_answer
             answers = await asyncio.gather(
                 m_pkg.quick_answer("搜索竞品"),
                 m_pkg.quick_answer("查一下库存"),
             )
             return streams, answers
+        #========
+        #         asyncio.run(scenario())  ← 启动事件循环
+        #         │
+        #         ▼
+        # scenario() 开始执行
+        #         │
+        #         ├─ 任务1：gather(collect_stream("甲"), collect_stream("乙丙"), collect_stream("丁戊己"))
+        #         │    ├─ 协程1: sleep 1次 → 返回 "甲"
+        #         │    ├─ 协程2: sleep 2次 → 返回 "乙丙"
+        #         │    └─ 协程3: sleep 3次 → 返回 "丁戊己"
+        #         │    结果: ["甲", "乙丙", "丁戊己"]  ← 按传入顺序！
+        #         │
+        #         ├─ 任务2：gather(quick_answer("搜索竞品"), quick_answer("查一下库存"))
+        #         │    ├─ 协程1: 路由到 search_tool → 返回 "...搜索结果..."
+        #         │    └─ 协程2: 路由到 db_tool → 返回 "...查询结果..."
+        #         │    结果: ["...搜索结果...", "...查询结果..."]
+        #         │
+        #         ▼
+        # 事件循环关闭 → 拿回 (streams, answers)
+        #         │
+        #         ▼
+        # 三个 assert 全过？
+        #   ├─ 是 → return 提示字符串 → check() 打印 [PASS]
+        #   └─ 否 → 抛 AssertionError → check() 打印 [FAIL] + 错误原因
+
+        #========
 
         m_pkg = sys.modules.get("mini_agent")
         assert m_pkg is not None, "mini_agent 未导入，先完成 TODO 4"
