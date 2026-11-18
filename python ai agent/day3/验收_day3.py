@@ -294,6 +294,40 @@ def main() -> int:
 
     results.append(check("6. 并发整合场景", t6))
 
+    #========总结=====
+#     核心结论：asyncio.gather 不会自动执行，它本身也是个可等待对象——必须被 await 才能触发里面协程的并发执行！
+# 我用三个阶段+极简例子给你理清楚这个容易混淆的链路。
+
+# 先澄清两个术语（避免鸡同鸭讲）
+# 术语	是什么	示例
+# 协程函数	用 async def 定义的函数（还没执行）	async def quick_answer(query): ...
+# 协程对象	调用协程函数后返回的对象（函数体还没跑，只是个"待执行的计划"）	quick_answer("搜索") → 返回 <coroutine object quick_answer at 0x...>
+# 关键前提：async def 的函数被调用时不会执行函数体，只是生成一个协程对象——这是新手最容易踩的坑。
+
+
+# 阶段 1：调协程函数 → 拿到"待执行的计划"（没执行！）
+# async def quick_answer(query: str) -> str:
+#     await asyncio.sleep(0.01)  # 模拟调用LLM
+#     return f"[{query}] 结果"
+
+# # 调用协程函数 → 得到协程对象（函数体根本没跑！）
+# coro1 = quick_answer("搜索竞品")   # coro1 是 <coroutine object>
+# coro2 = quick_answer("查库存")     # coro2 是 <coroutine object>
+
+# # 此时 quick_answer 的函数体（sleep + return）一行都没执行！
+# print(coro1)  # 输出 <coroutine object quick_answer at 0x...>
+
+# 必须 await gather！才会让事件循环真的把协程跑起来
+# results = await gather_obj
+
+# # 此时协程体才真的执行了：
+# # coro1 的 sleep 跑完 → 返回 "[搜索竞品] 结果"
+# # coro2 的 sleep 跑完 → 返回 "[查库存] 结果"
+# print(results)  # 输出 ['[搜索竞品] 结果', '[查库存] 结果'] ← 按传入顺序！
+# syncio.gather 是"协程打包器"，不是"执行器"——它接收协程对象，
+# 返回一个可等待的集合，只有被 await 时，才会触发事件循环把里面的协程并发跑起来，最后按传入顺序返回结果列表。
+    #========总结=====
+
     # ── 汇总 ────────────────────────────────────────────────────────────────
     passed = sum(results)
     print("-" * 64)
