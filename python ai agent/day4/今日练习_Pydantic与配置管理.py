@@ -88,21 +88,21 @@ class SubAgentConfig(BaseModel):
 
     # TODO 1a：声明 name 字段（str，必填）
     # ---- 在下面写你的代码 ----
-
+    name:str
     # TODO 1b：声明 description 字段（str，必填）
     # ---- 在下面写你的代码 ----
-
+    description:str
     # TODO 1c：声明 system_prompt 字段（str，必填）
     # ---- 在下面写你的代码 ----
-
+    system_prompt:str
     # TODO 1d：声明 tools 字段（list[str]，默认空列表）
     # 提示：tools: list[str] = []
     # ---- 在下面写你的代码 ----
-
+    tools:list[str] = []
     # TODO 1e：声明 kind 字段（Literal 三选一，默认 "search"）
     # 提示：kind: Literal["search", "db", "rag"] = "search"
     # ---- 在下面写你的代码 ----
-
+    kind: Literal["search", "db", "rag"] = "search"
 
 # ============================================================
 # TODO 2：Field 约束 —— 让错误数据进不来
@@ -130,17 +130,17 @@ class ToolConfig(BaseModel):
     # TODO 2a：name 字段，str，min_length=1，max_length=50
     # 提示：name: str = Field(min_length=1, max_length=50)
     # ---- 在下面写你的代码 ----
-
+    name:str = Field(min_length=1,max_length = 50)
     # TODO 2b：timeout 字段，int，ge=1，le=60
     # 提示：ge = greater or equal（>=），le = less or equal（<=）
     # ---- 在下面写你的代码 ----
-
+    timeout: int = Field(ge=1, le=60)
     # TODO 2c：retries 字段，int，ge=0，le=5，默认 3
     # ---- 在下面写你的代码 ----
-
+    retries:int = Field(ge=0, le=5,default=3)
     # TODO 2d：enabled 字段，bool，默认 True
     # ---- 在下面写你的代码 ----
-
+    enabled:bool = True
 
 # ============================================================
 # TODO 3：嵌套模型 —— 一个配置里装多个子配置
@@ -167,11 +167,11 @@ class AgentConfig(BaseModel):
 
     # TODO 3a：main_prompt 字段（str，必填）
     # ---- 在下面写你的代码 ----
-
+    main_prompt: str
     # TODO 3b：sub_agents 字段（list[SubAgentConfig]，默认空列表）
     # 提示：sub_agents: list[SubAgentConfig] = []
     # ---- 在下面写你的代码 ----
-
+    sub_agents:list[SubAgentConfig] = []
 
 # ============================================================
 # TODO 4：序列化 —— 模型 ↔ JSON
